@@ -1,0 +1,13 @@
+name = "WinControllerToFile"
+uuid = "35ccf8fc-7b30-4032-8229-e6f975734ee0"
+authors = ["hustf <hustf@users.noreply.github.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
