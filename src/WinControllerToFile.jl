@@ -131,9 +131,11 @@ function __init__()
                 # The handler function name includes sequence 'i',
                 # so that we can handle multiple controllers.
                 py"""
+                import time
                 def sample_handler$$i(data):
                     with open($$fina, 'w') as f:
-                        f.write("Raw data: {0}".format(data))
+                        f.write("{0} - Raw data".format(data))
+                        f.write("\n{0} - Current time value".format(time.time()))
                 """
             end
             @info("Generated $i Python handlers, run subscribe() when ready")

@@ -1,11 +1,12 @@
 # WinControllerToFile
 This package polls [rene-aguirre/pywinusb](https://github.com/rene-aguirre/pywinusb/) through [PyCall](https://github.com/JuliaPy/PyCall.jl).
 
-It updates a file per device with device current state (and does not update when there is no change).
-The intention is robust navigation dependencies for plots: Use output files as your input and keep this running in the background while you script or debug. 
+Use a mouse or spacemouse without depending on run-time state in your application! Keep it running in a separate process! It hopefully does not interfere with your other uses of these devices.
+
+This package updates a separate file per subscribed device with current state. A time stamp for the last state change can be used for integration over time! 
 
 ## Installation
-The default Python environment used by PyCall must include 'pywinusb'. One roundabout way to do that is:
+The default Python environment used by PyCall must include 'pywinusb'. One roundabout way to install that is:
 
 ```
 julia > ]add Conda
@@ -13,6 +14,8 @@ julia > ]add Conda
 julia> using Conda
 
 julia> Conda.add("pywinusb", Conda.ROOTENV, channel = "conda-forge")
+
+julia> add WinControllerToFile
 ```
 
 You can locate the Python source using 
@@ -52,7 +55,8 @@ Dict{String,Hid} with 13 entries:
 julia>
 PS C:\> cd ~\.julia_hid
 PS C:\Users\F\.julia_hid>PS C:\Users\F\.julia_hid> Get-Content .\hidvid_044fpid_b10a6396faf92000004d1e55b2f16f11cf88cb001111000030.txt
-Raw data: [0, 0, 0, 63, 0, 32, 0, 32, 128, 129]
+[0, 0, 0, 63, 0, 32, 0, 32, 128, 129] - Raw data
+1586283461.7795699 - Current time value
 
 ```
 
