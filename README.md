@@ -1,8 +1,8 @@
 # WinControllerToFile
-This package polls [rene-aguirre/pywinusb](https://github.com/rene-aguirre/pywinusb/blob/master/) through [PyCall](https://github.com/JuliaPy/PyCall.jl).
+This package polls [rene-aguirre/pywinusb](https://github.com/rene-aguirre/pywinusb/) through [PyCall](https://github.com/JuliaPy/PyCall.jl).
 
-It updates a file per device with device current state. 
-The intention is robust navigation dependencies for plots: Use output files as your input and keep this running in the background while you script or debug.
+It updates a file per device with device current state (and does not update when there is no change).
+The intention is robust navigation dependencies for plots: Use output files as your input and keep this running in the background while you script or debug. 
 
 ## Installation
 The default Python environment used by PyCall must include 'pywinusb'. One roundabout way to do that is:
@@ -55,6 +55,7 @@ PS C:\Users\F\.julia_hid>PS C:\Users\F\.julia_hid> Get-Content .\hidvid_044fpid_
 Raw data: [0, 0, 0, 63, 0, 32, 0, 32, 128, 129]
 
 ```
+
 
 ## Help wanted
 It would be nice to have this working for other than Windows. Please help through submitting issues and pull requests!

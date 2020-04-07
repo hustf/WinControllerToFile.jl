@@ -1,4 +1,4 @@
-"Call hid_vector() or hid_dict to list human interface devices"
+"Call hid_vector() or hid_dict() to get references to human interface devices"
 module WinControllerToFile
 using PyCall
 export PyObject, Hid, hid_dict, hid_vector
@@ -33,7 +33,7 @@ const SUBSCRIBETO = Array{String, 1}()
 const ACTIVE_SUBSCRIPTIONS = Array{Hid, 1}()
 const POLLINGTASKS = Array{Task, 1}()
 const ΔT = 0.02
-const MAXTIME = 10
+const MAXTIME = 1800 # Half an hour
 
 
 "Return a dictionary of usb human interface device references"
@@ -84,8 +84,8 @@ function subscribe()
     local count = 0
     for (i, su) in enumerate(SUBSCRIBETO)
         h = get(hids, su, nohid)
+        fina = joinpath(homedir(), ".julia_hid", su * ".txt")
         if h == nohid
-            fina = joinpath(homedir(), su * ".txt")
             @warn("The file $fina \n\t does not correspond to a connected Human Interface Device")
         else
             count += 1
@@ -94,7 +94,7 @@ function subscribe()
             push!(ACTIVE_SUBSCRIPTIONS, h)
             task = @async poller(ΔT, h)
             push!(POLLINGTASKS, task)
-            @info "Updating $(su).txt at $(Int(floor(1/ΔT)))) Hz for $MAXTIME s"
+            @info "Updating $fina \n\t at $(Int(floor(1/ΔT)))) Hz for $MAXTIME s"
         end
     end
     if count == 0
@@ -105,7 +105,7 @@ function subscribe()
         filenames= map(collect(keys(hids))) do ke
             ke * ".txt"
         end
-        @info "Candidates, create empty files  in folder '$(homedir())':"
+        @info "Candidates, create empty files  in '$(joinpath(homedir(), ".julia_hid"))':"
         display(filenames)
     end
     nothing
