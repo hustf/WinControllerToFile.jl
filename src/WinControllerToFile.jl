@@ -6,17 +6,6 @@ export set_data_handler
 export subscribe, ACTIVE_SUBSCRIPTIONS, POLLINGTASKS
 import Base.show
 
-"""
-A vector of strings, defined by user generated file names in ~/.julia_hid
-Each string corresponds to a Hid.device_path.
-Its index in SUBSCRIBETO is part of the name of a python handler function we 
-defined during this module's initialization.
-
-SUBSCRIBETO is populated during this module's initialization. The
-simplest way to add a subscription may be to exit Julia, make the files 
-and exit.
-"""
-
 struct Hid
     vendor_name::String
     vID::Int64
@@ -75,10 +64,13 @@ function poller(Δt, h::Hid)
 end
 
 """
-Define subscriptions and start polling. 
+Define subscriptions and start polling.
 Polling continues asyncronously until this process is terminated.
 """
 function subscribe()
+    if length(ACTIVE_SUBSCRIPTIONS) !=0
+        error("Sorry, you need to restart this module since subscriptions are defined.")
+    end
     hids = hid_dict()
     nohid = Hid()
     local count = 0
@@ -133,9 +125,17 @@ function __init__()
                 py"""
                 import time
                 def sample_handler$$i(data):
+                    i = 1
+                    headline = "#"
+                    dataline = " "
+                    for el in data:
+                        headline +="chn{:<5d}".format(i)
+                        dataline += "{:<8d}".format(el)
+                        i +=1
+                    timeline = "{} : Current time value".format(time.time())
+                    lines = headline + "\n" + dataline + "\n" + timeline
                     with open($$fina, 'w') as f:
-                        f.write("{0} - Raw data".format(data))
-                        f.write("\n{0} - Current time value".format(time.time()))
+                        f.write(lines)
                 """
             end
             @info("Generated $i Python handlers, run subscribe() when ready")
