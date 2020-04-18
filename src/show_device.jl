@@ -10,13 +10,12 @@ end
 
 # Long form, as in display(h) or REPL: h enter
 function Base.show(io::IO, ::MIME"text/plain", h::Hid)
-    ioc = IOContext(io)
-    print(ioc, "Hid(")
-    print(ioc, "\tvendor_name:\t ", h.vendor_name, "\n")
-    print(ioc, "\tproduct_name: ", h.product_name, "\n")
-    print(ioc, "\tvID:\t 0x", string(h.vID, base=16), "\n")
-    print(ioc, "\tpID:\t 0x", string(h.pID, base=16), "\n")
-    print(ioc, "\tdevice_path:\t ", h.device_path, ")")
+    print(io, "Hid(")
+    print(io, "\tvendor_name:\t ", h.vendor_name, "\n")
+    print(io, "\tproduct_name: ", h.product_name, "\n")
+    print(io, "\tvID:\t 0x", string(h.vID, base=16), "\n")
+    print(io, "\tpID:\t 0x", string(h.pID, base=16), "\n")
+    print(io, "\tdevice_path:\t ", h.device_path, ")")
 end
 
 
