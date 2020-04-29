@@ -1,7 +1,7 @@
 # WinControllerToFile
-This package polls [rene-aguirre/pywinusb](https://github.com/rene-aguirre/pywinusb/) through [PyCall](https://github.com/JuliaPy/PyCall.jl).
+This polls [rene-aguirre/pywinusb](https://github.com/rene-aguirre/pywinusb/) through [PyCall](https://github.com/JuliaPy/PyCall.jl).
 
-Use a mouse or spacemouse without depending on run-time state in your application! Keep it running in a separate process! It hopefully does not interfere with your other uses of these devices.
+Use a mouse or spacemouse without depending on run-time state in your application. Keep it running in a separate process! Just be aware that usb devices may try to make customization difficult. Also, pywinusb may have trouble updating at > 3 Hz.
 
 This package updates a separate file per subscribed device with current state. A time stamp for the last state change can be used for integration over time! 
 

@@ -1,6 +1,7 @@
 "Call hid_vector() or hid_dict() to get references to human interface devices"
 module WinControllerToFile
-using PyCall
+import REPL
+using PyCall, REPL.TerminalMenus
 export Hid, hid_dict, hid_vector
 export documentation
 export subscribe
@@ -21,8 +22,10 @@ include("show_device.jl")
 const SUBSCRIBETO = Array{String, 1}()
 const ACTIVE_SUBSCRIPTIONS = Array{Hid, 1}()
 const POLLINGTASKS = Array{Task, 1}()
-const ΔT = 0.02
-const MAXTIME = 1800 # Half an hour
+
+"The minimum Δt is around 250 millisecond. The bottleneck seems to be PyWinUsb."
+const ΔT = 0.25      # s
+const TIMEOUT = 1800 # Half an hour
 
 
 "Return a dictionary of usb human interface device references"
@@ -69,21 +72,22 @@ set_data_handler(i, h::Hid) = h.object.set_raw_data_handler(py"sample_handler$$i
 
 
 
-"The minimum Δt is 1 millisecond or 0.001. "
-function poller(Δt, h::Hid)
+"The minimum Δt is around 250 millisecond. The bottleneck seems to be PyWinUsb."
+function poller(timeout, Δt, h::Hid)
     t0 = time()
-    while time()-t0 < MAXTIME && is_plugged(h) # This triggers one sample written to file.
-        sleep(Δt)
+    while time()-t0 < timeout && is_plugged(h) # This triggers one sample written to file.
+        # PyWinUsb tends to pile up threads. Not triggering too often may help avoiding that.
+        sleep(Δt * 0.9)
     end
-    @info "Exit polling of  $(h.vendor_name) $(h.product_name) after $MAXTIME s "
+    @info "Exit polling of  $(h.vendor_name) $(h.product_name) after $timeout s "
 end
 
 """
 Define subscriptions and start reacting to events.
 Subscriptions run asyncronously until this process is terminated,
-although no events actually occur after MAXTIME.
+although no events actually occur after timeout.
 """
-function subscribe()
+function subscribe(;timeout = TIMEOUT, Δt = ΔT)
     if length(ACTIVE_SUBSCRIPTIONS) !=0
         error("Sorry, you need to restart this module since subscriptions are defined.")
     end
@@ -102,29 +106,40 @@ function subscribe()
             set_data_handler(i, h)
             open_hid(h)
             push!(ACTIVE_SUBSCRIPTIONS, h)
-            task = @async poller(ΔT, h)
+            task = @async poller(timeout, Δt, h)
             push!(POLLINGTASKS, task)
         end
         # Also write the full documentation for the subscribed device as a file
         docfina = joinpath(docfo, su * ".txt")
-        @info "Writing documentation to $docfo"
+        @info "Writing documentation to $docfina"
         open(docfina, write=true) do io
             documentation(io, h)
         end
-        @info "Updating $fina \n\t at $(Int(floor(1/ΔT)))) Hz for $MAXTIME s"
+        println(stdout, h)
+        @info "Updating $fina \n\t at $(Int(floor(1/Δt)))) Hz for $timeout s"
     end
     if count == 0
-        @info """
-                Available hids
-            """
-        display(hids)
-        filenames= map(collect(keys(hids))) do ke
-            ke * ".txt"
+        @info "No subscription files X.txt found in $fo\n\t. "
+        iob = IOBuffer()
+        ioc = IOContext(iob, :color => true, :limit => false)
+        show(ioc, "text/plain", values(hids))
+        st=String(take!(iob))
+        options = String.(split(st, "\n")[2:end])
+        menu = MultiSelectMenu(options,  pagesize = length(options))
+        choices = request("Select devices to subscribe to:", menu)
+        vehids = collect(values(hids))
+        for choice in choices
+            device = vehids[choice]
+            shfina = device.device_path * ".txt"
+            fina = joinpath(fo, shfina)
+            println(stdout, "\n", device, "\n\t\t\t\tStatus file ", shfina)
+            open(fina, write = true) do io
+                print(io, "\n")
+            end
         end
-        @info "Candidates, create empty files  in '$(joinpath(homedir(), ".julia_hid"))':"
-        display(filenames)
+        @info "Recompile WinControllerToFile to subscribe to updates based on connected devices and files in $fo"
     end
-    nothing
+    POLLINGTASKS
 end
 
 
@@ -148,25 +163,34 @@ function __init__()
                     # so that we can handle multiple controllers.
                     py"""
                     import time
+                    t0 = time.time()
+                    t$$i = time.time()
+
                     def sample_handler$$i(data):
-                        i = 1
-                        headline = "#"
-                        dataline = " "
-                        for el in data:
-                            headline +="chn{:<5d}".format(i)
-                            dataline += "{:<8d}".format(el)
-                            i +=1
-                        timeline = "{} : Current time value".format(time.time())
-                        lines = headline + "\n" + dataline + "\n" + timeline
-                        with open($$fina, 'w') as f:
-                            f.write(lines)"""
+                        global t0
+                        global t$$i
+                        if (time.time() - t$$i) >= $$ΔT:
+                            j = 1
+                            headline = "#"
+                            dataline = " "
+                            for el in data:
+                                headline +="chn{:<5d}".format(j)
+                                dataline += "{:<8d}".format(el)
+                                j +=1
+                            timeline = "{} : time".format(time.time() - t0)
+                            lines = headline + "\n" + dataline + "\n" + timeline
+                            with open($$fina, 'w') as f:
+                                f.write(lines)
+
+                            t$$i = time.time()"""
+
                 end
                 @info("Generated $i Python handlers, run subscribe() when ready")
             else
                 @warn("You need to create folder $docfo\n\tThen recompile WinControllerToFile")
             end
         else
-            @warn "You need to make a X.txt file in $fo\n\twhere 'X' represents the device(s) you will subscribe to.\n\tThen recompile WinControllerToFile"
+            @warn "No subscription files X.txt found in $fo\n\t. Run subscribe() to pick devices and generate the corresponding files. "
         end
     else
         @warn("You need to create folder $fo\n\tThen recompile WinControllerToFile")
